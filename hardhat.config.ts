@@ -3,6 +3,7 @@ dotenvenc.config();
 
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
+import "@nomicfoundation/hardhat-ignition-ethers";
 import './tasks';
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
@@ -14,8 +15,16 @@ const AVALANCHE_FUJI_RPC_URL = process.env.AVALANCHE_FUJI_RPC_URL;
 const BNB_CHAIN_TESTNET_RPC_URL = process.env.BNB_CHAIN_TESTNET_RPC_URL;
 const BASE_GOERLI_RPC_URL = process.env.BASE_GOERLI_RPC_URL;
 
+const ETHEREUM_ETHERSCAN_API_KEY = process.env.ETHEREUM_ETHERSCAN_API_KEY;
+const POLYGON_ETHERSCAN_API_KEY = process.env.POLYGON_ETHERSCAN_API_KEY;
+const OPTIMISM_ETHERSCAN_API_KEY = process.env.OPTIMISM_ETHERSCAN_API_KEY;
+const ARBITRUM_ETHERSCAN_API_KEY = process.env.ARBITRUM_ETHERSCAN_API_KEY;
+const AVALANCHE_ETHERSCAN_API_KEY = process.env.AVALANCHE_ETHERSCAN_API_KEY;
+const BNB_CHAIN_ETHERSCAN_API_KEY = process.env.BNB_CHAIN_ETHERSCAN_API_KEY;
+const BASE_ETHERSCAN_API_KEY = process.env.BASE_ETHERSCAN_API_KEY;
+
 const config: HardhatUserConfig = {
-  solidity: '0.8.19',
+  solidity: '0.8.24',
   networks: {
     hardhat: {
       chainId: 31337
@@ -64,6 +73,17 @@ const config: HardhatUserConfig = {
     tests: './test',
     cache: './cache',
     artifacts: './artifacts'
+  },
+  etherscan: {
+    apiKey: {
+      sepolia: ETHEREUM_ETHERSCAN_API_KEY !== undefined ? ETHEREUM_ETHERSCAN_API_KEY : '',
+      polygonMumbai: POLYGON_ETHERSCAN_API_KEY !== undefined ? POLYGON_ETHERSCAN_API_KEY : '',
+      optimismGoerli: OPTIMISM_ETHERSCAN_API_KEY !== undefined ? OPTIMISM_ETHERSCAN_API_KEY : '',
+      arbitrumSepolia: ARBITRUM_ETHERSCAN_API_KEY !== undefined ? ARBITRUM_ETHERSCAN_API_KEY : '',
+      avalancheFujiTestnet: AVALANCHE_ETHERSCAN_API_KEY !== undefined ? AVALANCHE_ETHERSCAN_API_KEY : '',
+      bnbChainTestnet: BNB_CHAIN_ETHERSCAN_API_KEY !== undefined ? BNB_CHAIN_ETHERSCAN_API_KEY : '',
+      baseGoerli: BASE_ETHERSCAN_API_KEY !== undefined ? BASE_ETHERSCAN_API_KEY : ''
+    },
   },
 };
 

@@ -65,6 +65,8 @@ export const getRouterConfig = (network: string) => {
             return routerConfig.bnbChainTestnet;
         case "baseGoerli":
             return routerConfig.baseGoerli;
+        case "hardhat":
+            return routerConfig.ethereumSepolia;
         default:
             throw new Error("Unknown network: " + network);
     }

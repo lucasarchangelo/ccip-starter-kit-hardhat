@@ -2,8 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import { Contract, Signer, utils } from "ethers";
-import type { Provider } from "@ethersproject/providers";
+import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   BurnMintERC677Helper,
   BurnMintERC677HelperInterface,
@@ -763,16 +762,16 @@ const _abi = [
 export class BurnMintERC677Helper__factory {
   static readonly abi = _abi;
   static createInterface(): BurnMintERC677HelperInterface {
-    return new utils.Interface(_abi) as BurnMintERC677HelperInterface;
+    return new Interface(_abi) as BurnMintERC677HelperInterface;
   }
   static connect(
     address: string,
-    signerOrProvider: Signer | Provider
+    runner?: ContractRunner | null
   ): BurnMintERC677Helper {
     return new Contract(
       address,
       _abi,
-      signerOrProvider
-    ) as BurnMintERC677Helper;
+      runner
+    ) as unknown as BurnMintERC677Helper;
   }
 }

@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.24;
 
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
-import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
-import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import {OwnerIsCreator} from "@chainlink/contracts-ccip/src/v0.8/shared/access/OwnerIsCreator.sol";
+import {LinkTokenInterface} from "@chainlink/contracts/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
@@ -18,6 +20,14 @@ import {SafeERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-
 /// Pay using native tokens (e.g, ETH in Ethereum)
 contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
     using SafeERC20 for IERC20;
+
+    enum PayFeesIn {
+        Native,
+        LINK
+    }
+
+    address immutable i_router;
+    address immutable i_link;
 
     // Custom errors to provide more descriptive revert messages.
     error NoMessageReceived(); // Used when trying to access a message but no messages have been received.
@@ -60,7 +70,12 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
 
     /// @notice Constructor initializes the contract with the router address.
     /// @param router The address of the router contract.
-    constructor(address router) CCIPReceiver(router) {}
+    /// @notice The LINK address of the network that it is goin to be deployed.
+    /// @param linkAddress The address of the router contract.
+    constructor(address router, address linkAddress) CCIPReceiver(router) {
+        i_router = router;
+        i_link = linkAddress;
+    }
 
     /// @notice Sends data to receiver on the destination chain.
     /// @dev Assumes your contract has sufficient native asset (e.g, ETH on Ethereum, MATIC on Polygon...).
@@ -75,7 +90,8 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         address receiver,
         string calldata message,
         address token,
-        uint256 amount
+        uint256 amount,
+        PayFeesIn payFeesIn
     ) external returns (bytes32 messageId) {
         // set the tokent amounts
         Client.EVMTokenAmount[]
@@ -93,7 +109,7 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
             extraArgs: Client._argsToBytes(
                 Client.EVMExtraArgsV1({gasLimit: 200_000}) // Additional arguments, setting gas limit and non-strict sequency mode
             ),
-            feeToken: address(0) // Setting feeToken to zero address, indicating native asset will be used for fees
+            feeToken: payFeesIn == PayFeesIn.LINK ? i_link : address(0)
         });
 
         // Initialize a router client instance to interact with cross-chain router
@@ -105,11 +121,18 @@ contract ProgrammableTokenTransfers is CCIPReceiver, OwnerIsCreator {
         // Get the fee required to send the message
         uint256 fees = router.getFee(destinationChainSelector, evm2AnyMessage);
 
-        // Send the message through the router and store the returned message ID
-        messageId = router.ccipSend{value: fees}(
-            destinationChainSelector,
-            evm2AnyMessage
-        );
+        if (payFeesIn == PayFeesIn.LINK) {
+            LinkTokenInterface(i_link).approve(i_router, fees);
+            messageId = IRouterClient(i_router).ccipSend(
+                destinationChainSelector,
+                evm2AnyMessage
+            );
+        } else {
+            messageId = IRouterClient(i_router).ccipSend{value: fees}(
+                destinationChainSelector,
+                evm2AnyMessage
+            );
+        }
 
         // Emit an event with message details
         emit MessageSent(
